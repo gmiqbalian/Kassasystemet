@@ -76,7 +76,7 @@ namespace Kassasystemet
                 ShowCurrentReceipt(newReceipt);
                
                 var salesInput = Console.ReadLine();
-                if (IsValidInput(salesInput))
+                if (salesInput.ToLower() != "pay" && IsValidInput(salesInput))
                 {
                     var split = salesInput.Split(' ');
                     var productId = split[0];
@@ -104,7 +104,16 @@ namespace Kassasystemet
         }
         public bool IsValidInput(string salesInput)
         {
-            if (salesInput.Length == 5 && salesInput.IndexOf(' ') == 3)
+            var split = salesInput.Split(' ');
+
+            if (split[0].Length == 0 || split[1].Length == 0)
+                return false;
+
+
+
+            int.TryParse(split[0], out var productId);
+            int.TryParse(split[1], out var qty);
+            if (productId > 0 && qty > 0 && salesInput.IndexOf(' ') == split[0].Length)
                 return true;
             return false;
         }

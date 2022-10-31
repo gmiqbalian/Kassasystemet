@@ -8,14 +8,34 @@ using System.Threading.Tasks;
 namespace Kassasystemet.Models
 {
     public class Receipt
-    {   
-        public string ReceiptNumber { get;}
+    {
+        public string ReceiptNumber { get; }
         public List<ReceiptRow> receiptRowsList = new List<ReceiptRow>();
         private static int receiptNumberSeed = 100;
         public Receipt()
         {
-            ReceiptNumber = "RN-" + receiptNumberSeed.ToString();
-            receiptNumberSeed++;
+            var currentReceiptNumber = 0;
+            var path = "RECEIPT_" + DateTime.Now.ToString("yyyyMMdd") + ".txt";
+
+            if (File.Exists(path))
+            {
+                foreach (var line in File.ReadLines(path))
+                {
+                    if (line.Contains("#RN-"))
+                    {
+                        int.TryParse(line.Split('-')[1], out currentReceiptNumber);
+                        currentReceiptNumber++;
+                    }
+                }
+            }
+            var receiptNumberBuilder = new StringBuilder();
+            receiptNumberBuilder.Append("#RN-");
+            if (currentReceiptNumber > 0)
+                receiptNumberBuilder.Append(currentReceiptNumber);
+            else
+                receiptNumberBuilder.Append(receiptNumberSeed);
+
+            ReceiptNumber = receiptNumberBuilder.ToString();
         }
         public decimal GetReceiptTotal()
         {
@@ -26,18 +46,15 @@ namespace Kassasystemet.Models
             }
             return sum;
         }
-        public void AddToReceipt(ReceiptRow receiptRow) //ask for help
+        public void AddToReceipt(ReceiptRow receiptRow)
         {
-            foreach (var row in receiptRowsList)
+            var row = receiptRowsList.Where(r => r.ProductId == receiptRow.ProductId).FirstOrDefault();
+            if (row != null)
             {
-                if (row.ProductId == receiptRow.ProductId)
-                {
-                    row.AddCount(receiptRow.Count);
-                }
-                continue;
+                row.AddCount(receiptRow.Count);
+                return;
             }            
-            receiptRowsList.Add(receiptRow);
-            //receiptRowsList.Add(receiptRow);
+            receiptRowsList.Add(receiptRow);            
         }
 
     }
