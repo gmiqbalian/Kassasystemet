@@ -19,13 +19,14 @@ namespace Kassasystemet.Models
             Count = count;
             Price = price;
         }
-        public decimal GetTotal()
+        public decimal GetRowTotal()
         {
+            
             return Count * Price;
         }
         public void AddCount(int count)
         {
-            count += count;
+            Count += count;
         }
     }
 }

@@ -10,7 +10,18 @@ namespace Kassasystemet.Models
     {
         public string ProductId { get; set; }
         public string Name { get; set; }
-        public decimal Price { get; set; }
+        public decimal Price //error?
+        {
+            get;
+            //{
+            //    if (ProductId == "100" && DateTime.Now > new DateTime(2022, 11, 20) && DateTime.Now < new DateTime(2022, 11, 31))
+            //        return Price = 12;
+            //    else
+            //        return Price;
+            //}
+            set; /*{ }*/
+           
+        }        
         public string PriceType { get; set; }
         public Product(string productId, string name, decimal price, string priceType)
         {

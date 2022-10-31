@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Reflection.PortableExecutable;
 using System.Security.Cryptography.X509Certificates;
@@ -26,8 +27,8 @@ namespace Kassasystemet
                 Console.WriteLine("2. Admin");
                 Console.WriteLine("0. Avsluta");
                 var input = Console.ReadLine();
-                if (input == "1")
-                    RegisterProduct(productList);
+                if (input == "1")                              
+                    RegisterProduct(productList);                
                 else if (input == "2")
                     Admin(productList);
                 else if (input == "0")
@@ -37,84 +38,92 @@ namespace Kassasystemet
 
         private void Admin(List<Product> productList)
         {
-            var newList = new List<Product>();
-            newList = ReadProductsFromFile();
-            Console.WriteLine("1. Ändra produkt namn");
-            Console.WriteLine("2. Ändra produkt pris");
-            Console.WriteLine("Ange val: ");
-
+            Console.Clear();
+            ShowProductList(productList);
+            Console.Write("Ange produkt id för att byta namn eller pris: ");
             var input = Console.ReadLine();
-            if(input == "1")
+            var productToChange = MatchProductList(productList, input);
+            
+            if (productToChange != null)
             {
-                Console.WriteLine("Ange produkt id för att byta namn: ");
-                var toChange = Console.ReadLine();
-                
-                foreach (var product in newList)
-                {
-                    if(product.Name == toChange)
-                    {
-                        product.Name = toChange;
-                    }
-                    var line = $"{product.ProductId};{product.Name};{product.Price};{product.PriceType}";
-                    File.WriteAllLines("Products.txt", line + Environment.NewLine);
-                }
-                using ()
-                {
+                Console.Write("Ange nytt namn: ");
+                var newName = Console.ReadLine();
+                productToChange.Name = newName;
 
-                }
-                
-                //foreach (var product in newList)
-                //{
-                //    if (product.ProductId == toChange)
-                //    {
-                //        Console.WriteLine("Ange nytt namn: ");
-                //        var newName = Console.ReadLine();
-                //        product.Name = newName;
-                //    }
-                //}
-                //foreach (var product in newList)
-                //{
-                //    var rowLine = $"{product.ProductId};{product.Name};{product.Price};{product.PriceType}";
-                    
-                //}
-
+                Console.Write("Ange nytt pris: ");
+                var newPrice = Console.ReadLine();
+                productToChange.Price = Convert.ToDecimal(newPrice);
             }
-        }
 
+            using (var file = File.CreateText("Products.txt"))
+                foreach (var product in productList)
+                    file.WriteLine($"{product.ProductId};{product.Name};{product.Price};{product.PriceType}");
+        }
+        public void ShowProductList(List<Product> productList)
+        {
+            foreach (var product in productList)            
+                Console.WriteLine($"{product.ProductId} {product.Name} {product.PriceType} {product.Price}");            
+        }
         public void RegisterProduct(List<Product> productList)
         {
-            Console.Clear();
+            //Console.Clear();
             var newReceipt = new Receipt();
-            Console.WriteLine("KASSA");
-            var date = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-            Console.WriteLine($"KVITTO {date}");
-            Console.WriteLine($"kommandon: ");
-            Console.WriteLine($"<product-id> <antal>");
-            Console.WriteLine($"PAY");
 
             while (true)
             {
-                Console.Write($"kommando: ");
-                var salesInput = Console.ReadLine();
-                if (salesInput.ToLower() == "pay")
-                {                    
-                    SaveReceipt(newReceipt);
-                    break;
-                }
+                Console.Clear();
 
-                var split = salesInput.Split(' ');
-                var productId = split[0];
-                var productCount = int.Parse(split[1]);
-                var soldProduct = MatchProductList(productList, productId); //product object
-                if (soldProduct == null)
-                    Console.WriteLine("Produkt med denna ID finns inte i lagar");                
-                else
+                ShowCurrentReceipt(newReceipt);
+               
+                var salesInput = Console.ReadLine();
+                if (IsValidInput(salesInput))
                 {
-                    var receiptRow = new ReceiptRow(soldProduct.ProductId, soldProduct.Name, productCount, soldProduct.Price);
-                    newReceipt.AddToReceipt(receiptRow);
+                    var split = salesInput.Split(' ');
+                    var productId = split[0];
+                    var productCount = int.Parse(split[1]);
+                    var soldProduct = MatchProductList(productList, productId); //returns product object
+                    if (soldProduct == null)
+                        Console.WriteLine("Produkt med denna ID finns inte i lagar");
+                    else
+                    {
+                        var receiptRow = new ReceiptRow(soldProduct.ProductId, soldProduct.Name, productCount, soldProduct.Price);
+                        newReceipt.AddToReceipt(receiptRow);                        
+                    }                    
                 }
-                    
+                if (salesInput.ToLower() == "pay") //control that it doesnt save empty receipt
+                {
+                    if (newReceipt.receiptRowsList.Count > 0)
+                    {
+                        SaveReceipt(newReceipt);
+                        break;
+                    }
+                    else
+                        Console.WriteLine("Lägg till produkter på kvitto");                
+                }
             }
+        }
+        public bool IsValidInput(string salesInput)
+        {
+            if (salesInput.Length == 5 && salesInput.IndexOf(' ') == 3)
+                return true;
+            return false;
+        }
+        public void ShowCurrentReceipt(Receipt newReceipt)
+        {
+            Console.WriteLine("KASSA");
+            var date = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+            Console.WriteLine($"KVITTO {date}");
+            if (newReceipt.receiptRowsList.Count > 0)
+            {
+                foreach (var row in newReceipt.receiptRowsList)
+                    Console.WriteLine($"{row.ProductName} {row.Count} * {row.Price} = {row.GetRowTotal()}");
+                Console.WriteLine($"Total: {newReceipt.GetReceiptTotal()}");
+            }
+            Console.WriteLine($"kommandon: ");
+            Console.WriteLine($"<product-id> <antal>");
+            Console.WriteLine($"PAY");
+            Console.Write($"kommando: ");
+
         }
        
         public List<Product> ReadProductsFromFile()
@@ -140,19 +149,17 @@ namespace Kassasystemet
         }
         public void SaveReceipt(Receipt newReceipt)
         {
-            
             var path = "RECEIPT_" + DateTime.Now.ToString("yyyyMMdd") + ".txt";
-            var receiptNumber = 100; //read from last number in file.
-            File.AppendAllText(path, receiptNumber + Environment.NewLine);
+            
+            File.AppendAllText(path, newReceipt.ReceiptNumber + Environment.NewLine);
             foreach (var row in newReceipt.receiptRowsList)
             {
-                var rowText = $"{row.ProductName} {row.Count} * {row.Price} = {row.GetTotal()}";
-                File.AppendAllText(path, rowText+ Environment.NewLine);
-
+                var rowText = $"{row.ProductName} {row.Count} * {row.Price} = {row.GetRowTotal()}";
+                File.AppendAllText(path, rowText + Environment.NewLine);
             }
-            var total = $"Total: {newReceipt.GetTotal()}";
+            var total = $"Total: {newReceipt.GetReceiptTotal()}";
             File.AppendAllText(path, total + Environment.NewLine);
-            receiptNumber+=1;
+
         }
     }
 }
