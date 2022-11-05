@@ -20,8 +20,7 @@ namespace Kassasystemet.Models
             Price = price;
         }
         public decimal GetRowTotal()
-        {
-            
+        {   
             return Count * Price;
         }
         public void AddCount(int count)

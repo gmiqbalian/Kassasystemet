@@ -11,12 +11,11 @@ namespace Kassasystemet.Models
     {
         public string ReceiptNumber { get; }
         public List<ReceiptRow> receiptRowsList = new List<ReceiptRow>();
-        private static int receiptNumberSeed = 100;
+
         public Receipt()
         {
-            var currentReceiptNumber = 0;
+            var currentReceiptNumber = 1;
             var path = "RECEIPT_" + DateTime.Now.ToString("yyyyMMdd") + ".txt";
-
             if (File.Exists(path))
             {
                 foreach (var line in File.ReadLines(path))
@@ -28,14 +27,7 @@ namespace Kassasystemet.Models
                     }
                 }
             }
-            var receiptNumberBuilder = new StringBuilder();
-            receiptNumberBuilder.Append("#RN-");
-            if (currentReceiptNumber > 0)
-                receiptNumberBuilder.Append(currentReceiptNumber);
-            else
-                receiptNumberBuilder.Append(receiptNumberSeed);
-
-            ReceiptNumber = receiptNumberBuilder.ToString();
+            ReceiptNumber = "#RN-" + currentReceiptNumber.ToString();
         }
         public decimal GetReceiptTotal()
         {
@@ -48,13 +40,34 @@ namespace Kassasystemet.Models
         }
         public void AddToReceipt(ReceiptRow receiptRow)
         {
-            var row = receiptRowsList.Where(r => r.ProductId == receiptRow.ProductId).FirstOrDefault();
-            if (row != null)
+            var existingProduct = receiptRowsList.Where(p => p.ProductId == receiptRow.ProductId).FirstOrDefault();
+            if (existingProduct != null)
+                existingProduct.AddCount(receiptRow.Count);
+            else
+                receiptRowsList.Add(receiptRow);
+        }
+        public void ShowCurrentReceipt()
+        {
+            if (receiptRowsList.Count > 0)
             {
-                row.AddCount(receiptRow.Count);
-                return;
-            }            
-            receiptRowsList.Add(receiptRow);            
+                foreach (var row in receiptRowsList)
+                    Console.WriteLine($"{row.ProductName} {row.Count} * {row.Price} = {row.GetRowTotal()}");
+                Console.WriteLine($"Total: {GetReceiptTotal()}");
+            }
+        }
+        public void MakeProductFile()
+        {
+            foreach (var product in receiptRowsList)
+            {
+                var fileName = product.ProductName.ToString() + ".txt";
+                if (!File.Exists(fileName))
+                    using (var file = File.CreateText(fileName))
+                        for (int i = 0; i < product.Count; i++)
+                            file.WriteLine(DateTime.Now.ToString("yyyy-MM-dd"));
+                else
+                    for (int i = 0; i < product.Count; i++)
+                        File.AppendAllText(fileName, DateTime.Now.ToString("yyyy-MM-dd") + Environment.NewLine);
+            }
         }
 
     }
