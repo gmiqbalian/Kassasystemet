@@ -87,7 +87,7 @@ namespace Kassasystemet
                         newReceipt.AddToReceipt(receiptRow);
                     }
                 }
-                else if (IsPayCommand(salesInput)) //controls that it doesnt save empty receipt
+                else if (IsPayCommand(salesInput))
                 {
                     if (newReceipt.receiptRowsList.Count > 0)
                     {

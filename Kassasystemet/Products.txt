@@ -1,6 +1,6 @@
-﻿100;Bröd;25.10;styck
-200;Mjölk;12.50;styck
-300;Kyckling;120;styck
-400;Päron;20;kilo
-500;Äpple;25;kilo
-600;Potatis;12.90;kilo
+﻿100;Bröd;25.10;styck;100
+200;Mjölk;12.50;styck;100
+300;Kyckling;120;styck;100
+400;Päron;20;kilo;100
+500;Äpple;25;kilo;100
+600;Potatis;12.90;kilo;100
